@@ -4,8 +4,8 @@ var passport = require('passport');
 var authJwtController = require('./auth_jwt');
 var jwt = require('jsonwebtoken');
 var cors = require('cors');
-
-require('dotenv').config();
+//
+// require('dotenv').config();
 
 var User = require('./Schemas/Users');
 var Movie = require('./Schemas/Movies');
