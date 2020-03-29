@@ -3,7 +3,7 @@
 var passport = require('passport');
 var JwtStrategy = require('passport-jwt').Strategy;
 var ExtractJwt = require('passport-jwt').ExtractJwt;
-require('dotenv').config();
+// require('dotenv').config();
 var User = require('./Schemas/Users');
 
 var opts = {};
