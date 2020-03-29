@@ -1,7 +1,7 @@
 {
-  "name": "echo",
+  "name": "hw3_backend",
   "version": "1.0.0",
-  "description": "echo server",
+  "description": "backend for HW3",
   "main": "server.js",
   "scripts": {
     "test": "mocha --timeout 10000 --exit"
@@ -9,16 +9,18 @@
   "author": "Cameron Gastineau",
   "license": "ISC",
   "dependencies": {
+    "bcrypt-nodejs": "0.0.3",
     "body-parser": "^1.18.2",
     "cors": "^2.8.5",
-    "dotenv": "^6.2.0",
     "express": "^4.16.2",
     "jsonwebtoken": "^8.1.1",
+    "mongoose": "^5.0.9",
     "passport": "^0.4.0",
     "passport-http": "^0.3.0",
     "passport-jwt": "^3.0.1"
   },
   "devDependencies": {
+    "dotenv": "^6.2.0",
     "mocha": "^5.2.0",
     "chai": "^4.2.0",
     "chai-http": "^4.2.0",

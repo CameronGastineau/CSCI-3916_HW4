@@ -1,241 +1,215 @@
 var express = require('express');
-var http = require('http');
 var bodyParser = require('body-parser');
 var passport = require('passport');
-var authController = require('./auth');
 var authJwtController = require('./auth_jwt');
-db = require('./db')(); //global hack
 var jwt = require('jsonwebtoken');
 var cors = require('cors');
+
+require('dotenv').config();
+
+var User = require('./Schemas/Users');
+var Movie = require('./Schemas/Movies');
 
 var app = express();
 app.use(cors());
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
-
+app.use(bodyParser.urlencoded({extended: false}));
 app.use(passport.initialize());
 
 var router = express.Router();
 
-//below function duplicated for get..., post..., put..., delete... because we'll eventually need to do more than just create JSON object and return
-function getJSONObject(req) {
-    var json = {
-        headers : "No Headers",
-        key: process.env.UNIQUE_KEY,
-        body : "No Body",
-    };
-
-    //Set json body
-    if (req.body != null) {
-        json.body = req.body;
-    }
-
-    //set json headers
-    if (req.headers != null) {
-        json.headers = { status: 200, message: "GET movies", headers: req.headers, query: req.body.q, env: process.env.UNIQUE_KEY };
-    }
-
-    return json;
-}
-
-//below function duplicated for get..., post..., put..., delete... because we'll eventually need to do more than just create JSON object and return
-function postJSONObject(req) {
-    var json = {
-        headers : "No Headers",
-        key: process.env.UNIQUE_KEY,
-        body : "No Body",
-    };
-
-    //Set json body
-    if (req.body != null) {
-        json.body = req.body;
-    }
-
-    //set json headers
-    if (req.headers != null) {
-        json.headers = { status: 200, message: "movie saved", headers: req.headers, query: req.body.q, env: process.env.UNIQUE_KEY };
-    }
-
-    return json;
-}
-
-//below function duplicated for get..., post..., put..., delete... because we'll eventually need to do more than just create JSON object and return
-function putJSONObject(req) {
-    var json = {
-        headers : "No Headers",
-        key: process.env.UNIQUE_KEY,
-        body : "No Body",
-    };
-
-    //Set json body
-    if (req.body != null) {
-        json.body = req.body;
-    }
-
-    //set json headers
-    if (req.headers != null) {
-        json.headers = { status: 200, message: "movie updated", headers: req.headers, query: req.body.q, env: process.env.UNIQUE_KEY };
-    }
-
-    return json;
-}
-
-//below function duplicated for get..., post..., put..., delete... because we'll eventually need to do more than just create JSON object and return
-function deleteJSONObject(req) {
-    var json = {
-        headers : "No Headers",
-        status: status,
-        message: message,
-        key: process.env.UNIQUE_KEY,
-        body : "No Body",
-    };
-
-    //Set json body
-    if (req.body != null) {
-        json.body = req.body;
-    }
-
-    //set json headers
-    if (req.headers != null) {
-        json.headers = { status: 200, message: "movie deleted", headers: req.headers, query: req.body.q, env: process.env.UNIQUE_KEY };
-    }
-
-    return json;
-}
-
 router.route('/movies')
-    .get( function (req, res) { //no auth needed for this - based on requirements...
+    .get(authJwtController.isAuthenticated, function (req, res) {
         //output the request to server console
+        console.log("\n=====GET REQUEST=====");
         console.log(req.body);
 
-        //At the moment, status is always 200 if we get into this object. Later, we'll need to add validation.
-        res = res.status(200);
-
-        //message for a get is "GET movies"
-        res.setHeader("Message", "GET movies");
-
-        //if the request has a content-type, output it and set response content-type to the same
-        if (req.get('Content-Type')) {
-            console.log("Content-Type: " + req.get('Content-Type'));
-            res = res.type(req.get('Content-Type'));
-        }
-
-        //get the requested item and return it
-        res.json(getJSONObject(req));
+        Movie.find(function (err, movie) {
+            if (err) {
+                res.status(500).send(err);
+            } else {
+                res.status(200).json(movie);
+            }
+        })
     })
-    .post(function (req, res) { //no auth needed for this - based on requirements...
+    .post(authJwtController.isAuthenticated, function (req, res) {
+
         //output the request to server console
+        console.log("\n=====POST REQUEST=====");
         console.log(req.body);
 
-        //At the moment, status is always 200 if we get into this object. Later, we'll need to add validation.
-        res = res.status(200);
+        if (!req.body.title || !req.body.yearReleased || !req.body.genre || !req.body.actors) {
+            res.status(400).json({
+                success: false,
+                message: 'Please pass complete movie details, including title, yearReleased, genre, and at least one actor (including name and character).'
+            });
+        } else {
+            var movie = new Movie();
+            movie.title = req.body.title;
+            movie.yearReleased = req.body.yearReleased;
+            movie.genre = req.body.genre;
+            movie.actors = req.body.actors;
+            // save the movie
+            movie.save(function (err) {
+                if (err) {
+                    // duplicate entry
+                    if (err.code === 11000)
+                        return res.status(400).json({success: false, message: 'A movie with that title already exists.'});
+                    else
+                        return res.status(500).send(err);
+                }
 
-        if (req.get('Content-Type')) {
-            console.log("Content-Type: " + req.get('Content-Type'));
-            res = res.type(req.get('Content-Type'));
+                res.status(200).json({success: true, message: 'Movie created!'});
+            });
         }
-
-        //message for post is "movie saved"
-        res.setHeader("Message", "movie saved");
-
-        //post the json object in the request
-        res.json(postJSONObject(req));
     })
     .put(authJwtController.isAuthenticated, function (req, res) {
         //output the request to server console
+        console.log("\n=====PUT REQUEST=====");
         console.log(req.body);
 
-        //At the moment, status is always 200 if we get into this object. Later, we'll need to add validation.
-        res = res.status(200);
+        Movie.findByIdAndUpdate(
+            // the id of the item to find
+            req.body._id,
 
-        if (req.get('Content-Type')) {
-            console.log("Content-Type: " + req.get('Content-Type'));
-            res = res.type(req.get('Content-Type'));
-        }
+            // the change to be made. Mongoose will smartly combine your existing
+            // document with this change, which allows for partial updates too
+            req.body,
 
-        //message for post is "movie updated"
-        res.setHeader("Message", "movie updated");
+            // an option that asks mongoose to return the updated version
+            // of the document instead of the pre-updated one.
+            {new: true},
 
-        //update the json object in the request
-        res.json(putJSONObject(req));
-    })
-    .delete(authController.isAuthenticated, function (req, res) {
+            // the callback function
+            (err, movie) => {
+                if(!movie) {
+                    return res.status(400).json({ success: false, message: 'Failed to update movie with provided id: No such movie found'});
+                }
 
-        //output the request to server console
-        console.log(req.body);
+                // Handle any possible database errors
+                if (err)
+                    return res.status(500).send(err);
+                return res.status(200).json({success: true, message: 'Movie updated!'});
+            })
+        })
+        .delete(authJwtController.isAuthenticated, function (req, res) {
+            //output the request to server console
+            console.log("\n=====DELETE REQUEST WITH ID=====");
+            console.log(req.body);
 
-        //At the moment, status is always 200 if we get into this object. Later, we'll need to add validation.
-        res = res.status(200);
+            Movie.findByIdAndDelete(req.body._id, (err, movie) => {
+                if(!movie) {
+                    return res.status(400).json({success: false, message: 'Failed to delete movie with provided id: No such movie found'})
+                }
 
-        if (req.get('Content-Type')) {
-            console.log("Content-Type: " + req.get('Content-Type'));
-            res = res.type(req.get('Content-Type'));
-        }
-
-        //message for post is "movie deleted"
-        res.setHeader("Message", "movie deleted");
-
-        //update the json object in the request
-        res.json(deleteJSONObject(req));
+                if (err)
+                    return res.status(500).send(err);
+                return res.status(200).json({success: true, message: 'Movie deleted.'});
+            })
     });
 
-router.route('/post')
-    .post(authController.isAuthenticated, function (req, res) {
-            console.log(req.body);
-            res = res.status(200);
-            if (req.get('Content-Type')) {
-                console.log("Content-Type: " + req.get('Content-Type'));
-                res = res.type(req.get('Content-Type'));
-            }
-            var o = getJSONObject(req);
-            res.json(o);
-        }
-    );
+router.route('/movies/:id')
+    .get(authJwtController.isAuthenticated, function (req, res) {
+        //output the request to server console
+        console.log("\n=====GET REQUEST WITH ID=====");
+        console.log(req.body);
 
-router.route('/postjwt')
-    .post(authJwtController.isAuthenticated, function (req, res) {
-            console.log(req.body);
-            res = res.status(200);
-            if (req.get('Content-Type')) {
-                console.log("Content-Type: " + req.get('Content-Type'));
-                res = res.type(req.get('Content-Type'));
-            }
-            res.send(req.body);
-        }
-    );
+        var id = req.params.id;
+        Movie.findById(id, function (err, movie) {
+            if(!movie)
+                return res.status(400).json({ success: false, message: 'Failed to find movie with provided id: No such movie found'});
 
-router.post('/signup', function(req, res) {
+            if (err)
+                res.status(500).send(err);
+
+            var movieJSON = JSON.stringify(movie);
+            // return that movie
+            res.status(200).json(movie);
+        });
+    });
+
+router.route('/users/:userId')
+    .get(authJwtController.isAuthenticated, function (req, res) {
+        //output the request to server console
+        console.log("\n=====GET USER WITH ID=====");
+        console.log(req.body);
+
+        var id = req.params.userId;
+        User.findById(id, function (err, user) {
+            if (err) res.send(err);
+
+            var userJson = JSON.stringify(user);
+            // return that user
+            res.json(user);
+        });
+    });
+
+router.route('/users')
+    .get(authJwtController.isAuthenticated, function (req, res) {
+        //output the request to server console
+        console.log("\n=====GET USER=====");
+        console.log(req.body);
+
+        User.find(function (err, users) {
+            if (err) res.send(err);
+            // return the users
+            res.json(users);
+        });
+    });
+
+router.post('/signup', function (req, res) {
+    //output the request to server console
+    console.log("\n=====POST SIGNUP REQUEST=====");
+    console.log(req.body);
+
     if (!req.body.username || !req.body.password) {
-        res.json({success: false, msg: 'Please pass username and password.'});
+        res.status(400).json({success: false, message: 'Please pass username and password.'});
     } else {
-        var newUser = {
-            username: req.body.username,
-            password: req.body.password
-        };
+        var user = new User();
+        user.name = req.body.name;
+        user.username = req.body.username;
+        user.password = req.body.password;
         // save the user
-        db.save(newUser); //no duplicate checking
-        res.json({success: true, msg: 'Successful created new user.'});
+        user.save(function (err) {
+            if (err) {
+                // duplicate entry
+                if (err.code == 11000)
+                    return res.status(400).json({success: false, message: 'A user with that username already exists.'});
+                else
+                    return res.status(500).send(err);
+            }
+
+            res.status(200).json({success: true, message: 'User created!'});
+        });
     }
 });
 
-router.post('/signin', function(req, res) {
+router.post('/signin', function (req, res) {
+    //output the request to server console
+    console.log("\n=====POST SIGNIN REQUEST=====");
+    console.log(req.body);
 
-        var user = db.findOne(req.body.username);
+    var userNew = new User();
+    userNew.name = req.body.name;
+    userNew.username = req.body.username;
+    userNew.password = req.body.password;
 
-        if (!user) {
-            res.status(401).send({success: false, msg: 'Authentication failed. User not found.'});
-        }
-        else {
-            // check if password matches
-            if (req.body.password == user.password)  {
-                var userToken = { id : user.id, username: user.username };
+    User.findOne({username: userNew.username}).select('name username password').exec(function (err, user) {
+        if (err)
+            res.status(500).send(err);
+
+        user.comparePassword(userNew.password, function (isMatch) {
+            if (isMatch) {
+                var userToken = {id: user._id, username: user.username};
                 var token = jwt.sign(userToken, process.env.SECRET_KEY);
                 res.json({success: true, token: 'JWT ' + token});
+            } else {
+                res.status(401).send({success: false, message: 'Authentication failed.'});
             }
-            else {
-                res.status(401).send({success: false, msg: 'Authentication failed. Wrong password.'});
-            }
-        };
+        });
+
+
+    });
 });
 
 app.use('/', router);
