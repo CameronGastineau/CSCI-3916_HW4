@@ -1,6 +1,6 @@
 # CSCI-3916_HW3_Backend
 
-Frontend found here:
+Frontend found here: https://github.com/CameronGastineau/CSCI-3916_HW3
 
 API: https://csci-3916-hw3-backend.herokuapp.com/
 
