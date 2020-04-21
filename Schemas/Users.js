@@ -1,11 +1,11 @@
 var mongoose = require('mongoose');
-// require('dotenv').config();
 var Schema = mongoose.Schema;
 var bcrypt = require('bcrypt-nodejs');
 
+// require('dotenv').config({path:"./.env.development"});
+
 mongoose.Promise = global.Promise;
 
-//mongoose.connect(process.env.DB, { useNewUrlParser: true } );
 mongoose.connect(process.env.DB,
     {
         useNewUrlParser: true,
@@ -19,7 +19,7 @@ mongoose.connect(process.env.DB,
 
 // user schema
 var UserSchema = new Schema({
-    name: String,
+    name: {type: String, required: true },
     username: { type: String, required: true, index: { unique: true }},
     password: { type: String, required: true, select: false }
 });

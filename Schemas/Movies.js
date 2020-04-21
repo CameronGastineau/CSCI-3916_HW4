@@ -1,10 +1,10 @@
 var mongoose = require('mongoose');
-// require('dotenv').config();
 var Schema = mongoose.Schema;
+
+// require('dotenv').config({path:"./.env.development"});
 
 mongoose.Promise = global.Promise;
 
-//mongoose.connect(process.env.DB, {useNewUrlParser: true});
 mongoose.connect(process.env.DB,
     {
         useNewUrlParser: true,
