@@ -1,7 +1,5 @@
 # CSCI-3916_HW4
 
-Frontend found here: https://github.com/CameronGastineau/CSCI-3916_HW4
+API: https://csci-3916-hw4.herokuapp.com/
 
-API: 
-
-Tests: 
+Tests: [![Run in Postman](https://run.pstmn.io/button.svg)](https://app.getpostman.com/run-collection/38b55378f1340991250a)
