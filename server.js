@@ -222,6 +222,12 @@ router.route('/movies/:id')
                             foreignField: "movieID",
                             as: "reviews"
                         }
+                    },
+                        {
+                            $addFields: {
+                                averageRating: {$avg: "$reviews.rating"}
+                            }
+                        }
                     }
                 ], function(err, doc) {
                     if (err){
