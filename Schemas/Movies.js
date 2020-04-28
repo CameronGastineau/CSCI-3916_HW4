@@ -53,6 +53,10 @@ var MovieSchema = new Schema({
     actors: {
         type: [ActorSchema],
         required: true
+    },
+    imageURL: {
+        type: String,
+        required: true
     }
 });
 
