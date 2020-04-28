@@ -228,7 +228,7 @@ router.route('/movies/:id')
                         res.status(400).json({ success: false, message: 'Problems with Review Aggregation'})
                     }
                     else {
-                        res.status(200).json(doc);
+                        res.status(200).json(doc[0]);
                     }
                 })
             } else {
